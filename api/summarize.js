@@ -19,13 +19,7 @@ module.exports = async function handler(req, res) {
     const text = (body.text || "").slice(0, 12000);
     if (!text) throw new Error("No text provided");
 
-    const prompt = `Summarize the following technical documentation in 4–6 bullet points. Focus only on text; ignore images, code snippets, and tables. Organize your summary under three headings:
-
-1. **Purpose & Scope** – What is the goal of this document and its coverage?  
-2. **Value Proposition** – What key benefits, advantages, or innovations does it provide?  
-3. **Quick Summary of Content** – Highlight the main concepts, workflows, or features.
-
-Each bullet should be concise, clear, and self-contained.
+    const prompt = `Summarize the following technical documentation in 4–6 bullet points, ignoring images/code/tables:
 
 ${text}`;
 
