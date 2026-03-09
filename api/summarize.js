@@ -1,30 +1,24 @@
-// api/summarize.js (CommonJS)
-const { TextServiceClient } = require('@google-ai/generativelanguage');
-const { GoogleAuth } = require('google-auth-library');
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
-module.exports = async (req, res) => {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const { text } = req.body;
 
-  try {
-    const { content } = req.body;
-    if (!content) return res.status(400).json({ error: 'No content provided' });
-
-    const client = new TextServiceClient({
-      auth: new GoogleAuth({
-        credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT),
-        scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+  const response = await fetch(
+    'https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.GOOGLE_API_KEY}`,
+      },
+      body: JSON.stringify({
+        prompt: `Summarize the following article:\n${text}`,
+        temperature: 0.5,
+        maxOutputTokens: 200,
       }),
-    });
+    }
+  );
 
-    const response = await client.generateText({
-      model: 'models/text-bison-001',
-      prompt: `Summarize this article in a few sentences:\n\n${content}`,
-      temperature: 0.2,
-    });
-
-    res.json({ summary: response.candidates[0].output });
-  } catch (error) {
-    console.error('AI summarize error:', error);
-    res.status(500).json({ error: 'Error generating summary', detail: error.message });
-  }
-};
+  const data = await response.json();
+  res.status(200).json({ summary: data.candidates[0].output });
+}
