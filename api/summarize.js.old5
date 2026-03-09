@@ -1,5 +1,3 @@
-const crypto = require("crypto");
-
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -58,22 +56,6 @@ ${text}
 `;
     }
 
-    // 生成缓存 key
-    const cacheKey = crypto
-      .createHash("md5")
-      .update(text)                // 用文章文本生成唯一缓存 key
-      .digest("hex");              // 将其转换为 md5 hash
-
-    // 查询缓存
-    const cachedSummary = await kv.get(cacheKey);
-
-    if (cachedSummary) {
-      // 如果缓存中有结果，直接返回
-      console.log("Cache hit: Returning cached summary");
-      return res.status(200).json({ summary: cachedSummary });
-    }
-
-    // 没有缓存，继续生成摘要
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${process.env.GOOGLE_API_KEY}`,
       {
@@ -83,7 +65,7 @@ ${text}
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             temperature: 0.2,
-            maxOutputTokens: 500,
+            maxOutputTokens: 500
           },
         }),
       }
@@ -96,11 +78,6 @@ ${text}
     if (data.candidates?.[0]?.content?.parts?.length) {
       summary = data.candidates[0].content.parts[0].text.trim();
     }
-
-    // 将摘要存入缓存，设定有效期（例如 24 小时）
-    await kv.set(cacheKey, summary, { ttl: 86400 });
-
-    console.log("Cache miss: Storing summary in cache");
 
     res.status(200).json({ summary });
 
