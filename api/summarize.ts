@@ -1,31 +1,26 @@
-export default async function handler(req, res) {
+// api/summarize.ts
+import type { NextApiRequest, NextApiResponse } from "next";
+
+type Data = {
+  summary?: string;
+  error?: string;
+};
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<Data>
+) {
+  // 只允许 POST
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
   const { text } = req.body;
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_KEY}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: `Summarize this article:\n\n${text}`,
-              },
-            ],
-          },
-        ],
-      }),
-    }
-  );
+  if (!text) {
+    return res.status(400).json({ error: "Missing text in request body" });
+  }
 
-  const data = await response.json();
-
-  const summary =
-    data.candidates?.[0]?.content?.parts?.[0]?.text || "No summary";
-
-  res.json({ summary });
+  // 测试响应
+  return res.status(200).json({ summary: `Received text: ${text}` });
 }
