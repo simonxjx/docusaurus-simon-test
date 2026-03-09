@@ -23,9 +23,15 @@ module.exports = async function handler(req, res) {
 
     // Gemini API 调用
     const prompt = `
-Summarize the following technical documentation in 4–6 bullet points, ignoring images/code/tables:
-
-${text}`;
+    You are a technical documentation summarizer.
+    Summarize the following text in 4–6 concise bullet points.
+    Focus on the main ideas and instructions.
+    Do not include images, code, or tables.
+    Keep each point clear and self-contained.
+    
+    Text:
+    ${text}
+    `;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GOOGLE_API_KEY}`,
@@ -33,8 +39,8 @@ ${text}`;
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 300 },
+          contents: [{ parts: [{ text: optimizedPrompt }] }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 500 },
         }),
       }
     );
