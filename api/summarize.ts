@@ -1,15 +1,5 @@
 // api/summarize.ts
-import type { NextApiRequest, NextApiResponse } from "next";
-
-type Data = {
-  summary?: string;
-  error?: string;
-};
-
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<Data>
-) {
+export default async function handler(req: any, res: any) {
   // 只允许 POST
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
