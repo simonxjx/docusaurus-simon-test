@@ -1,42 +1,47 @@
-// api/summarize.js
-// Node 18+ 自带 fetch，如果是老版本可以 npm install node-fetch
-
 module.exports = async (req, res) => {
-  // 仅允许 POST
-  if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
-  // 跨域允许（如果 Docusaurus 部署在其他域名）
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).send('Method Not Allowed');
+  }
 
   try {
     const { text } = req.body;
 
-    if (!text) return res.status(400).json({ error: 'No text provided' });
-
-    const apiResponse = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText',
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GOOGLE_API_KEY}`,
       {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.GOOGLE_API_KEY}`, // 在 Vercel Dashboard 配置
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          prompt: `Summarize the following article:\n${text}`,
-          temperature: 0.5,
-          maxOutputTokens: 200,
-        }),
+          contents: [
+            {
+              parts: [
+                { text: `Summarize the following article:\n${text}` }
+              ]
+            }
+          ]
+        })
       }
     );
 
-    const data = await apiResponse.json();
+    const data = await response.json();
 
-    // 返回摘要
-    res.status(200).json({ summary: data.candidates[0].output });
+    const summary =
+      data.candidates?.[0]?.content?.parts?.[0]?.text || "No summary generated";
+
+    res.status(200).json({ summary });
+
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
