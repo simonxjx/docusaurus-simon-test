@@ -1,4 +1,3 @@
-// api/summarize.js
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -8,6 +7,10 @@ module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
 
   try {
+    if (!process.env.GOOGLE_API_KEY) {
+      throw new Error("GOOGLE_API_KEY not set");
+    }
+
     const body = await new Promise((resolve, reject) => {
       let data = "";
       req.on("data", chunk => data += chunk);
@@ -16,13 +19,11 @@ module.exports = async function handler(req, res) {
     });
 
     const text = (body.text || "").slice(0, 12000);
-
-    if (!process.env.GOOGLE_API_KEY) {
-      throw new Error("GOOGLE_API_KEY not set");
-    }
+    if (!text) throw new Error("No text provided");
 
     const prompt = `
-Summarize the following technical documentation in 4–6 concise bullet points:
+Summarize the following technical documentation in 4–6 bullet points, ignoring images/code/tables:
+
 ${text}`;
 
     const response = await fetch(
@@ -41,11 +42,7 @@ ${text}`;
     console.log("Gemini Response:", JSON.stringify(data, null, 2));
 
     let summary = "AI could not generate a summary.";
-    if (
-      data.candidates &&
-      data.candidates.length > 0 &&
-      data.candidates[0].content?.parts?.length
-    ) {
+    if (data.candidates?.[0]?.content?.parts?.length) {
       summary = data.candidates[0].content.parts[0].text;
     }
 
