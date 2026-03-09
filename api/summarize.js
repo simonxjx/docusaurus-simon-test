@@ -1,6 +1,3 @@
-// api/summarize.js
-const fetch = require("node-fetch");
-
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -12,7 +9,6 @@ module.exports = async function handler(req, res) {
   try {
     if (!process.env.GOOGLE_API_KEY) throw new Error("GOOGLE_API_KEY not set");
 
-    // 解析请求 body
     const body = await new Promise((resolve, reject) => {
       let data = "";
       req.on("data", chunk => data += chunk);
@@ -20,22 +16,14 @@ module.exports = async function handler(req, res) {
       req.on("error", reject);
     });
 
-    const text = (body.text || "").slice(0, 12000); // 限制长度，避免超出 token
+    const text = (body.text || "").slice(0, 12000);
     if (!text) throw new Error("No text provided");
 
-    // 优化 prompt，确保返回 4-6 条 bullet points
     const prompt = `
-You are a technical documentation summarizer.
-Summarize the following text in 4–6 concise bullet points.
-Focus on the main ideas and instructions.
-Do not include images, code, or tables.
-Keep each point clear and self-contained.
+Summarize the following technical documentation in 4–6 bullet points, ignoring images/code/tables:
 
-Text:
-${text}
-`;
+${text}`;
 
-    // 调用 Gemini API
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GOOGLE_API_KEY}`,
       {
@@ -43,7 +31,7 @@ ${text}
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 500 },
+          generationConfig: { temperature: 0.3, maxOutputTokens: 300 },
         }),
       }
     );
