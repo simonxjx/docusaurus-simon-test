@@ -1,4 +1,7 @@
-export default async function handler(req, res) {
+// api/summarize.js
+const fetch = require('node-fetch'); // 如果 node 版本>=18, fetch 可直接用，不需要引入
+
+module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
   const { text } = req.body;
@@ -21,4 +24,4 @@ export default async function handler(req, res) {
 
   const data = await response.json();
   res.status(200).json({ summary: data.candidates[0].output });
-}
+};
