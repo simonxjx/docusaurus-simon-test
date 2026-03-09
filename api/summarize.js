@@ -21,6 +21,7 @@ module.exports = async function handler(req, res) {
     const text = (body.text || "").slice(0, 12000);
     if (!text) throw new Error("No text provided");
 
+    // Gemini API 调用
     const prompt = `
 Summarize the following technical documentation in 4–6 bullet points, ignoring images/code/tables:
 
@@ -39,17 +40,14 @@ ${text}`;
     );
 
     const data = await response.json();
-    console.log("Gemini Response:", JSON.stringify(data, null, 2));
-
     let summary = "AI could not generate a summary.";
     if (data.candidates?.[0]?.content?.parts?.length) {
       summary = data.candidates[0].content.parts[0].text;
     }
 
     res.status(200).json({ summary });
-
   } catch (err) {
-    console.error("Serverless Error:", err);
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
