@@ -20,7 +20,14 @@ module.exports = async function handler(req, res) {
     if (!text) throw new Error("No text provided");
 
     const prompt = `
-Summarize the following technical documentation in 4–6 bullet points, ignoring images/code/tables:
+You are a technical documentation summarizer.
+Summarize the following text in 4–6 bullet points.
+Do NOT write any introduction like "Here's a summary of ...".
+Focus on main ideas and instructions only.
+Ignore images, code, and tables.
+Each bullet should be concise and self-contained.
+
+Text:
 
 ${text}`;
 
@@ -31,7 +38,7 @@ ${text}`;
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 300 },
+          generationConfig: { temperature: 0.3, maxOutputTokens: 500 },
         }),
       }
     );
