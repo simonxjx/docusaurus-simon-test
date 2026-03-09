@@ -16,7 +16,7 @@ module.exports = async (req, res) => {
     const { text } = req.body;
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GOOGLE_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GOOGLE_API_KEY}`,
       {
         method: "POST",
         headers: {
@@ -26,7 +26,9 @@ module.exports = async (req, res) => {
           contents: [
             {
               parts: [
-                { text: `Summarize the following article:\n${text}` }
+                {
+                  text: `Summarize the following article in 5 bullet points:\n\n${text}`
+                }
               ]
             }
           ]
@@ -35,10 +37,12 @@ module.exports = async (req, res) => {
     );
 
     const data = await response.json();
+
     console.log(JSON.stringify(data, null, 2));
-    
+
     const summary =
-      data.candidates?.[0]?.content?.parts?.[0]?.text || "No summary generated";
+      data.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "No summary generated";
 
     res.status(200).json({ summary });
 
