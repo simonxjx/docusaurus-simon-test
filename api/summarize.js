@@ -57,7 +57,7 @@ ${text}
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: { temperature: 0.3, maxOutputTokens: 1000 },
           text,
-          lang: isZh ? "zh" : "en"
+          lang: lang ? "zh" : "en"
         }),
       }
     );
