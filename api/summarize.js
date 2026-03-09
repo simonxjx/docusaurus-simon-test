@@ -1,15 +1,17 @@
-import { NextResponse } from 'next/server';
-import { TextServiceClient } from '@google-ai/generativelanguage';
-import { GoogleAuth } from 'google-auth-library';
+// api/summarize.js (CommonJS)
+const { TextServiceClient } = require('@google-ai/generativelanguage');
+const { GoogleAuth } = require('google-auth-library');
 
-export async function POST(req) {
+module.exports = async (req, res) => {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
   try {
-    const { content } = await req.json();
-    if (!content) return NextResponse.json({ error: 'No content provided' }, { status: 400 });
+    const { content } = req.body;
+    if (!content) return res.status(400).json({ error: 'No content provided' });
 
     const client = new TextServiceClient({
       auth: new GoogleAuth({
-        credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT), // 确保这个环境变量存在
+        credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT),
         scopes: ['https://www.googleapis.com/auth/cloud-platform'],
       }),
     });
@@ -20,9 +22,9 @@ export async function POST(req) {
       temperature: 0.2,
     });
 
-    return NextResponse.json({ summary: response.candidates[0].output });
+    res.json({ summary: response.candidates[0].output });
   } catch (error) {
-    console.error('AI summarize error:', error); // 🔥 关键：打印错误
-    return NextResponse.json({ error: 'Error generating summary', detail: error.message }, { status: 500 });
+    console.error('AI summarize error:', error);
+    res.status(500).json({ error: 'Error generating summary', detail: error.message });
   }
-}
+};
