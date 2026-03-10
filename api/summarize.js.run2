@@ -30,49 +30,27 @@ module.exports = async function handler(req, res) {
 
     const isChinese = /[\u4e00-\u9fa5]/.test(text.slice(0, 200));
 
-const prompt = isChinese
-  ? `
-请阅读以下技术文档，并生成结构化摘要。
-
-输出必须包含以下三个部分：
-
-目的与范围
-- 用1-2句话说明文档的目的以及涵盖范围。
-
-价值说明
-- 用1-2句话说明这篇文档对读者的价值或能解决什么问题。
-
-内容快速概览
-- 用3-5条简洁的要点总结文档的主要内容。
+    const prompt = isChinese
+      ? `
+请阅读以下技术文档，并生成4-6条简洁的要点总结。
 
 要求：
-- 每条要点一句话
+- 使用项目符号
+- 每条一句话
 - 忽略图片、代码块和表格
 - 只保留核心信息
-- 表达简洁清晰
 
 文档：
 ${text}
 `
-  : `
-Read the following technical documentation and generate a structured summary.
-
-The output must contain the following three sections:
-
-Purpose & Scope
-- 1–2 sentences explaining the purpose of the document and what it covers.
-
-Value Proposition
-- 1–2 sentences explaining the value of the document and why it is useful for readers.
-
-Quick Summary of Content
-- 3–5 concise bullet points summarizing the main content.
+      : `
+Read the following technical documentation and summarize it into 4-6 bullet points.
 
 Requirements:
 - One sentence per bullet
+- Use bullet points
 - Ignore images, code blocks, and tables
 - Focus only on key information
-- Keep the summary concise and clear
 
 Document:
 ${text}
