@@ -1,35 +1,32 @@
 // api/summarize.js
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "POST") return res.status(405).json({ error: "Method Not Allowed" });
 
   try {
-    let text = "";
+    if (!process.env.GOOGLE_API_KEY) throw new Error("GOOGLE_API_KEY not set");
 
-    if (req.method === "POST") {
-      const body = await new Promise((resolve, reject) => {
-        let data = "";
-        req.on("data", chunk => data += chunk);
-        req.on("end", () => resolve(JSON.parse(data)));
-        req.on("error", reject);
-      });
-      text = body.text || "";
-    } else if (req.method === "GET") {
-      text = req.query.text || "";
-    } else {
-      return res.status(405).json({ error: "Method Not Allowed" });
-    }
+    const body = await new Promise((resolve, reject) => {
+      let data = "";
+      req.on("data", chunk => data += chunk);
+      req.on("end", () => resolve(JSON.parse(data)));
+      req.on("error", reject);
+    });
 
+    let text = body.text || "";
     if (!text) throw new Error("No text provided");
 
     // 限制最大长度，防止 token 爆
     text = text.slice(0, 10000);
 
+    // 自动检测语言
     const isChinese = /[\u4e00-\u9fa5]/.test(text.slice(0, 200));
 
+    // 构造 prompt
     const prompt = isChinese
       ? `
 请阅读以下技术文档，并生成4-6条简洁的要点总结。
@@ -66,17 +63,23 @@ ${text}
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             temperature: 0.2,
-            maxOutputTokens: 800
+            maxOutputTokens: 800 // 增加输出 token
           },
         }),
       }
     );
 
     const data = await response.json();
+    console.log("Gemini API 返回数据:", data);
+
+    // 尝试获取摘要
     let summary = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
+    // 如果模型返回空，则生成提示文本
     if (!summary) {
-      summary = isChinese ? "AI 未能生成摘要。" : "AI could not generate a summary.";
+      summary = isChinese
+        ? "AI 未能生成摘要。"
+        : "AI could not generate a summary.";
     }
 
     res.status(200).json({ summary });
