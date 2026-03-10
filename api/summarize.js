@@ -38,6 +38,7 @@ const prompt = isChinese
 - 每个部分的标题使用 <div style="font-weight: bold;">标题内容</div> 加粗并加冒号
 - 第二、第三部分的标题上方空两行，可通过添加两个 <br> 实现
 - 输出 HTML 字符串，可直接在网页中渲染
+- **不要转义 <div>、<ul>、<li> 或 <br> 标签**，直接输出可渲染的 HTML
 
 目的与范围
 
@@ -66,6 +67,7 @@ The output must contain the following three sections, with these rules:
 - Use <div style="font-weight: bold;">Title Content</div> to bold the title of each section and add a colon
 - Above the titles of sections two and three, leave two blank lines, which can be achieved by adding two <br>.
 - Output HTML string, can be directly rendered on a webpage
+- **Do not escape <div>, <ul>, <li>, or <br> tags**; output valid HTML that can be rendered
 
 Purpose & Scope
 
