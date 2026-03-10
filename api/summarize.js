@@ -35,9 +35,8 @@ const prompt = isChinese
 请阅读以下技术文档，并生成结构化摘要。
 
 输出必须包含以下三个部分，要求：
-- 标题后必须空一行
-- 不使用 Markdown 的 # 或 ### 标题
-- 第二和第三部分的标题前面多空一行
+- 标题后加冒号
+- 第二和第三部分的标题上面空两行
 
 目的与范围
 
@@ -63,9 +62,8 @@ ${text}
 Read the following technical documentation and generate a structured summary.
 
 The output must contain the following three sections, with these rules:
-- There must be a blank line after each title
-- Do not use Markdown headings (#, ##, ###)
-- Add an extra blank line before the titles of the second and third parts
+- Add a colon after the title
+- Leave two lines above the titles of the second and third parts
 
 Purpose & Scope
 
