@@ -1,5 +1,5 @@
-// api/summarize.js (Vercel Serverless Function)
-module.exports = async (req, res) => {
+module.exports = async function handler(req, res) {
+
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -7,84 +7,137 @@ module.exports = async (req, res) => {
   if (req.method === "OPTIONS") return res.status(200).end();
 
   try {
+
     let text = "";
 
-    if (req.method === "POST") {
-      const body = await req.json();
-      // 支持 base64 编码的中文
-      if (body.text && body.text.match(/^[A-Za-z0-9+/=]+$/)) {
-        text = decodeURIComponent(escape(atob(body.text)));
-      } else {
-        text = body.text || "";
-      }
-    } else {
-      text = req.query.text || "";
+    if (req.method === "GET") {
+
+      const encoded = req.query.text || "";
+
+      if (!encoded) throw new Error("No text provided");
+
+      text = decodeURIComponent(
+        escape(Buffer.from(encoded, "base64").toString())
+      );
+
+    } else if (req.method === "POST") {
+
+      const body = req.body || {};
+      text = body.text || "";
+
     }
 
-    if (!text.trim()) {
-      return res.status(400).json({ error: "No text provided" });
-    }
+    if (!text) throw new Error("Empty text");
 
-    text = text.slice(0, 15000); // 硬限制
+    // 防止 token 爆
+    text = text.slice(0, 8000);
 
-    const isChinese = /[\u4e00-\u9fa5]/.test(text.slice(0, 300));
+    const isChinese = /[\u4e00-\u9fa5]/.test(text.slice(0, 200));
 
     const prompt = isChinese
-      ? `请阅读以下技术文档，生成**结构化**的简洁摘要。只输出 HTML，不要任何多余说明。
+      ? `阅读技术文档并生成HTML摘要。
 
-**目的与范围**：
+规则：
 
-一句话说明文档目标和覆盖范围。
+忽略图片、代码块、表格  
+输出 **纯HTML**  
+不要 markdown  
+不要 \`\`\`
 
-**核心价值**：
+结构：
 
-一句话说明读者能获得什么帮助。
+<strong>目的与范围：</strong>
+1-2句话说明文档目的
 
-**关键内容速览**：
+<br/><br/>
 
-- 要点 1
-- 要点 2
-- 要点 3
-- ...
+<strong>价值说明：</strong>
+1-2句话说明读者能解决什么问题
 
-严格忽略：图片、代码块、表格、注释、页脚
+<br/><br/>
+
+<strong>内容快速概览：</strong>
+
+<ul>
+<li>3-5条关键要点</li>
+</ul>
 
 文档：
+
 ${text}`
-      : `...英文版 prompt 同理...`;
+      : `Read the technical document and generate a HTML summary.
+
+Rules:
+
+Ignore images, code blocks, tables  
+Output pure HTML  
+Do NOT use markdown
+
+Structure:
+
+<strong>Purpose & Scope:</strong>
+
+1-2 sentences
+
+<br/><br/>
+
+<strong>Value Proposition:</strong>
+
+1-2 sentences
+
+<br/><br/>
+
+<strong>Quick Summary:</strong>
+
+<ul>
+<li>3-5 key points</li>
+</ul>
+
+Document:
+
+${text}`;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GOOGLE_API_KEY}`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
-            temperature: 0.15,
-            topP: 0.9,
-            maxOutputTokens: 600,
-          },
-        }),
+            temperature: 0.2,
+            maxOutputTokens: 800
+          }
+        })
       }
     );
 
-    if (!response.ok) throw new Error(`Gemini API error: ${response.status}`);
-
     const data = await response.json();
-    let summary = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? "";
 
-    // 更强力清理
+    let summary =
+      data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+    // 清理 markdown 包裹
     summary = summary
-      .replace(/^```html?|```$/g, "")
-      .replace(/^\s*[\r\n]+/, "")
-      .replace(/[\r\n]+\s*$/, "")
+      .replace(/```html/g, "")
+      .replace(/```/g, "")
       .trim();
 
-    res.status(200).json({ summary: summary || (isChinese ? "暂无摘要" : "No summary generated") });
+    if (!summary) {
+      summary = isChinese
+        ? "AI 未能生成摘要。"
+        : "AI could not generate a summary.";
+    }
+
+    res.status(200).json({ summary });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal server error" });
+
+    console.error("Serverless Error:", err);
+
+    res.status(500).json({ error: err.message });
+
   }
 };
