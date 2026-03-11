@@ -1,31 +1,44 @@
 // api/summarize.js
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") return res.status(200).end();
 
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method Not Allowed" });
-  }
-
   try {
-    const body = await new Promise((resolve, reject) => {
-      let data = "";
-      req.on("data", chunk => data += chunk);
-      req.on("end", () => resolve(JSON.parse(data)));
-      req.on("error", reject);
-    });
+    let text = "";
+    let lang = "en"; // 默认英文
 
-    let text = body.text || "";
-    let lang = body.lang || "en";
+    // --- 处理 POST 请求 ---
+if (req.method === "POST") {
+  const body = await new Promise((resolve, reject) => {
+    let data = "";
+    req.on("data", chunk => data += chunk);
+    req.on("end", () => resolve(JSON.parse(data)));
+    req.on("error", reject);
+  });
+  text = body.text || "";
+  lang = body.lang || "en";
+}
+    // --- 处理 GET 请求 ---
+    else if (req.method === "GET") {
+      const encoded = req.query.text || "";
+      text = Buffer.from(encoded, "base64").toString("utf-8");
+      lang = req.query.lang || "en";
+    } 
+    else {
+      return res.status(405).json({ error: "Method Not Allowed" });
+    }
 
     if (!text) throw new Error("No text provided");
 
-    text = text.slice(0, 10000); // 限制长度
+    // 限制最大长度，防止 token 爆
+    text = text.slice(0, 10000);
+
     const isChinese = lang === "zh";
 
+    // --- 构造 prompt ---
     const prompt = isChinese
       ? `请使用简体中文输出。
 请阅读以下技术文档，并生成结构化摘要。
@@ -91,8 +104,13 @@ ${text}`;
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          text: textToSummarize,
+          lang: isZh ? "zh" : "en",
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 800 },
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 800
+          },
         }),
       }
     );
@@ -101,10 +119,12 @@ ${text}`;
 
     let summary = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
-    summary = summary.replace(/^```html\s*/i, "")
-                     .replace(/^```\s*/i, "")
-                     .replace(/\s*```$/, "")
-                     .trim();
+    // --- 清理可能的 Markdown 包裹或多余空行 ---
+    summary = summary
+      .replace(/^```html\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/\s*```$/, "")
+      .trim();
 
     if (!summary) {
       summary = isChinese ? "AI 未能生成摘要。" : "AI could not generate a summary.";
