@@ -11,17 +11,16 @@ module.exports = async function handler(req, res) {
     let lang = "en"; // 默认英文
 
     // --- 处理 POST 请求 ---
-    if (req.method === "POST") {
-      const body = await new Promise((resolve, reject) => {
-        let data = "";
-        req.on("data", chunk => data += chunk);
-        req.on("end", () => resolve(JSON.parse(data)));
-        req.on("error", reject);
-      });
-      text = body.text || "";
-      lang = body.lang || "en";
-
-    } 
+if (req.method === "POST") {
+  const body = await new Promise((resolve, reject) => {
+    let data = "";
+    req.on("data", chunk => data += chunk);
+    req.on("end", () => resolve(JSON.parse(data)));
+    req.on("error", reject);
+  });
+  text = body.text || "";
+  lang = body.lang || "en";
+}
     // --- 处理 GET 请求 ---
     else if (req.method === "GET") {
       const encoded = req.query.text || "";
@@ -105,6 +104,8 @@ ${text}`;
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          text: textToSummarize,
+          lang: isZh ? "zh" : "en",
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             temperature: 0.2,
