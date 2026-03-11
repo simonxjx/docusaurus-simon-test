@@ -36,7 +36,7 @@ if (req.method === "POST") {
     // 限制最大长度，防止 token 爆
     text = text.slice(0, 10000);
 
-    const isChinese = lang === "zh";
+    const isChinese = lang === "zh-cn";
 
     // --- 构造 prompt ---
     const prompt = isChinese
@@ -105,7 +105,7 @@ ${text}`;
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text: textToSummarize,
-          lang: isZh ? "zh" : "en",
+          lang: isZh ? "zh-cn" : "en",
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             temperature: 0.2,
