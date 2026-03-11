@@ -17,9 +17,10 @@ module.exports = async function handler(req, res) {
         req.on("error", reject);
       });
       text = body.text || "";
-    } else if (req.method === "GET") {
-      text = req.query.text || "";
-    } else {
+} else if (req.method === "GET") {
+  const encoded = req.query.text || "";
+  text = Buffer.from(encoded, "base64").toString("utf-8");
+} else {
       return res.status(405).json({ error: "Method Not Allowed" });
     }
 
@@ -28,8 +29,8 @@ module.exports = async function handler(req, res) {
     // 限制最大长度，防止 token 爆
     text = text.slice(0, 10000);
 
-    const chineseChars = text.match(/[\u4e00-\u9fff]/g) || [];
-    const isChinese = chineseChars.length > 20;
+const lang = req.query.lang || "en";
+const isChinese = lang === "zh";
 
 const prompt = isChinese
   ? `
