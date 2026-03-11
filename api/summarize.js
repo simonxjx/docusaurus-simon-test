@@ -28,10 +28,13 @@ module.exports = async function handler(req, res) {
     // 限制最大长度，防止 token 爆
     text = text.slice(0, 10000);
 
-    const isChinese = /[\u4e00-\u9fa5]/.test(text.slice(0, 200));
+    const chineseChars = text.match(/[\u4e00-\u9fff]/g) || [];
+    const isChinese = chineseChars.length > 20;
 
 const prompt = isChinese
   ? `
+
+  请使用简体中文输出。
 请阅读以下技术文档，并生成结构化摘要。
 
 输出必须包含以下三个部分，要求：
